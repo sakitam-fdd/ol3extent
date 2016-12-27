@@ -1,0 +1,35 @@
+.measure-tool{
+
+}
+.measureTooltip {
+  font: 16px "Microsoft YaHei";
+}
+
+.BMapLabel {
+
+}
+
+.BMap_disBoxDis {
+  color: #ff6319;
+  font-weight: 700;
+}
+
+.BMap_disi {
+  color: #7a7a7a;
+  position: absolute;
+  left: 5px;
+  padding: 0 4px 1px 0;
+  line-height: 17px;
+  background: url(http://webmap0.map.bdimg.com/image/api/dis_box_01.gif) no-repeat right top;
+}
+
+.BMap_disLabel {
+  line-height: 16px;
+}
+
+.BMap_diso {
+  height: 17px;
+  width: 5px;
+  position: absolute;
+  background: url(http://webmap0.map.bdimg.com/image/api/dis_box_01.gif) no-repeat left top;
+}
