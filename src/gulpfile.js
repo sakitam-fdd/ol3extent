@@ -1,13 +1,17 @@
-var gulp = require('gulp');
-var concat = require('gulp-concat');                   // 合并文件
-var rename = require('gulp-rename');                   // 重命名
-var minifyCss = require('gulp-minify-css');            // 压缩CSS；
-var sass = require('gulp-ruby-sass');			             // 编译scss
-var uglify = require('gulp-uglify');
-var replace = require('gulp-replace');
-var changed = require('gulp-changed');
-var watch = require('gulp-watch');
-var dir = require('gulp-concat-dir');
+'use strict';
+var gulp = require('gulp'),
+  concat = require('gulp-concat'),                  // 合并文件
+  rename = require('gulp-rename'),                   // 重命名
+  minifyCss = require('gulp-minify-css'),           // 压缩CSS；
+  sass = require('gulp-ruby-sass'),			             // 编译scss
+  uglify = require('gulp-uglify'),
+  replace = require('gulp-replace'),
+  changed = require('gulp-changed'),
+  watch = require('gulp-watch'),
+  dir = require('gulp-concat-dir'),
+  jshint = require('gulp-jshint');
+// Load plugins
+var $ = require('gulp-load-plugins')();
 
 
 var src = {
@@ -15,9 +19,9 @@ var src = {
   css: './build/css/',                //css目录
   compressCss: './build/css/*.css',   //连接后的css
   minCss: './build/dist/css/',        //压缩后的css
-  script:'./lib/**/*.js',             //js源目录
-  build:'./build/',    //连接后的js
-  distjs:'./build/ol3extent.min.js'   //压缩后的js
+  script: './lib/**/*.js',             //js源目录
+  build: './build/',    //连接后的js
+  distjs: './build/ol3extent.min.js'   //压缩后的js
 };
 
 // sass任务
@@ -39,7 +43,7 @@ gulp.task('minifyCss', ['sass'], function () {
 
 //js任务
 
-gulp.task('concatjs',function () {
+gulp.task('concatjs', function () {
   return gulp.src(src.script)
     .pipe(concat('ol3extent.js'))
     .pipe(gulp.dest(src.build))
@@ -47,13 +51,24 @@ gulp.task('concatjs',function () {
     .pipe(rename('ol3extent.min.js'))
     .pipe(gulp.dest(src.build))
 });
+
+/* es6 */
+gulp.task('es6toes5', function () {
+  return gulp.src('./es6lib/**/*.js')
+    .pipe($.plumber())
+    .pipe($.babel({
+      presets: ['es2015']
+    }))
+    .pipe(gulp.dest('build/es5/'));
+});
+
 //default
 gulp.task('default', function () {
   var jsWatch = gulp.watch(src.script, ['concatjs']);
   jsWatch.on('change', function (e) {
     console.log('File ' + e.path + ' was ' + e.type + ', running compact js ...');
   });
-  var cssWatch = gulp.watch(src.scss, ['sass','minifyCss']);
+  var cssWatch = gulp.watch(src.scss, ['sass', 'minifyCss']);
   jsWatch.on('change', function (e) {
     console.log('File ' + e.path + ' was ' + e.type + ', running compact css ...');
   });

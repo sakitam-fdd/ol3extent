@@ -8,7 +8,8 @@
   } else {
     root.ol = factory();
   }
-}(this, function () {
+}(this, function ()
+{
   var OPENLAYERS = {};
   var goog = this.goog = {};
 this.CLOSURE_NO_DEPS = true;
