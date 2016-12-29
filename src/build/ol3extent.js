@@ -1,3 +1,114 @@
+var app = {};
+app.Drag = function () {
+  ol.interaction.Pointer.call(this, {
+    handleDownEvent: app.Drag.prototype.handleDownEvent,
+    handleDragEvent: app.Drag.prototype.handleDragEvent,
+    handleMoveEvent: app.Drag.prototype.handleMoveEvent,
+    handleUpEvent: app.Drag.prototype.handleUpEvent
+  });
+  this.customType = "appDrag";
+  /**
+   * @type {ol.Pixel}
+   * @private
+   */
+  this.coordinate_ = null;
+
+  /**
+   * @type {string|undefined}
+   * @private
+   */
+  this.cursor_ = 'pointer';
+
+  /**
+   * @type {ol.Feature}
+   * @private
+   */
+  this.feature_ = null;
+
+  /**
+   * @type {string|undefined}
+   * @private
+   */
+  this.previousCursor_ = undefined;
+
+};
+ol.inherits(app.Drag, ol.interaction.Pointer);
+
+/**
+ * @param {ol.MapBrowserEvent} evt Map browser event.
+ * @return {boolean} `true` to start the drag sequence.
+ */
+app.Drag.prototype.handleDownEvent = function (evt) {
+  if (evt.originalEvent.button === 0/*鼠标左键*/) {
+    var map = evt.map;
+    var feature = map.forEachFeatureAtPixel(evt.pixel,
+      function (feature) {
+        return feature;
+      });
+    if (feature && feature.get("params") && feature.get("params").moveable) {
+      this.coordinate_ = evt.coordinate;
+      this.feature_ = feature;
+    }
+    return !!feature;
+  }
+};
+
+/**
+ * @param {ol.MapBrowserEvent} evt Map browser event.
+ */
+app.Drag.prototype.handleDragEvent = function (evt) {
+  if (!this.coordinate_) {
+    return;
+  }
+  var deltaX = evt.coordinate[0] - this.coordinate_[0];
+  var deltaY = evt.coordinate[1] - this.coordinate_[1];
+  var geometry = /** @type {ol.geom.SimpleGeometry} */
+    (this.feature_.getGeometry());
+  geometry.translate(deltaX, deltaY);
+  this.coordinate_[0] = evt.coordinate[0];
+  this.coordinate_[1] = evt.coordinate[1];
+  this.feature_.dispatchEvent("featureMove");
+};
+
+
+/**
+ * @param {ol.MapBrowserEvent} evt Event.
+ */
+app.Drag.prototype.handleMoveEvent = function (evt) {
+  if (this.cursor_) {
+    var map = evt.map;
+    var feature = null;
+    if (this.feature_) {
+      feature = this.feature_;
+    } else {
+      feature = map.forEachFeatureAtPixel(evt.pixel,
+        function (feature) {
+          return feature;
+        });
+    }
+
+    var element = evt.map.getTargetElement();
+    if (feature) {
+      if (element.style.cursor != this.cursor_) {
+        this.previousCursor_ = element.style.cursor;
+        element.style.cursor = this.cursor_;
+      }
+    } else if (this.previousCursor_ !== undefined) {
+      element.style.cursor = this.previousCursor_;
+      this.previousCursor_ = undefined;
+    }
+  }
+};
+
+/**
+ * @return {boolean} `false` to stop the drag sequence.
+ */
+app.Drag.prototype.handleUpEvent = function () {
+  window.testdrag = false;
+  this.coordinate_ = null;
+  this.feature_ = null;
+  return false;
+};
 /**
  * OpenLayers 3 MeasureTool.
  * author:https://github.com/smileFDD
@@ -554,93 +665,6 @@ ol.control.Measure.enableTouchScroll_ = function (elm) {
   }
 };
 /**
- * OpenLayers 3 Layer Switcher Control.
- * @constructor
- * @extends {ol.control.Control}
- * @param {Object} opt_options Control options, extends olx.control.ControlOptions.
- */
-ol.control.LayerSwitcher = function(opt_options) {
-
-  var options = opt_options || {};
-  var tipLabel = options.tipLabel ?
-    options.tipLabel : 'Legend';
-
-  this.mapListeners = [];
-
-  this.hiddenClassName = 'ol-unselectable ol-control layer-switcher';
-  if (ol.control.LayerSwitcher.isTouchDevice_()) {
-    this.hiddenClassName += ' touch';
-  }
-  this.shownClassName = this.hiddenClassName + ' shown';
-
-  var element = document.createElement('div');
-  element.className = this.hiddenClassName;
-
-  var button = document.createElement('button');
-  button.setAttribute('title', tipLabel);
-  element.appendChild(button);
-
-  this.panel = document.createElement('div');
-  this.panel.className = 'panel';
-  element.appendChild(this.panel);
-  ol.control.LayerSwitcher.enableTouchScroll_(this.panel);
-
-  var this_ = this;
-
-  button.onmouseover = function(e) {
-    this_.showPanel();
-  };
-
-  button.onclick = function(e) {
-    e = e || window.event;
-    this_.showPanel();
-    e.preventDefault();
-  };
-
-  this_.panel.onmouseout = function(e) {
-    e = e || window.event;
-    if (!this_.panel.contains(e.toElement || e.relatedTarget)) {
-      this_.hidePanel();
-    }
-  };
-  ol.control.Control.call(this, {
-    element: element,
-    target: options.target
-  });
-
-};
-
-ol.inherits(ol.control.LayerSwitcher, ol.control.Control);
-
-/**
- * @private
- * @desc Apply workaround to enable scrolling of overflowing content within an
- */
-ol.control.LayerSwitcher.enableTouchScroll_ = function(elm) {
-  if(ol.control.LayerSwitcher.isTouchDevice_()){
-    var scrollStartPos = 0;
-    elm.addEventListener("touchstart", function(event) {
-      scrollStartPos = this.scrollTop + event.touches[0].pageY;
-    }, false);
-    elm.addEventListener("touchmove", function(event) {
-      this.scrollTop = scrollStartPos - event.touches[0].pageY;
-    }, false);
-  }
-};
-
-/**
- * @private
- * @desc Determine if the current browser supports touch events. Adapted from
- */
-ol.control.LayerSwitcher.isTouchDevice_ = function() {
-  try {
-    document.createEvent("TouchEvent");
-    return true;
-  } catch(e) {
-    return false;
-  }
-};
-/**
  * Created by FDD on 2016/11/9.
  * 提出气泡功能
  * OpenLayers 3 Popup Overlay.
@@ -1004,5 +1028,93 @@ ol.Overlay.Popup.enableTouchScroll_ = function (elm) {
     elm.addEventListener("touchmove", function (event) {
       this.scrollTop = scrollStartPos - event.touches[0].pageY;
     }, false);
+  }
+};
+
+/**
+ * OpenLayers 3 Layer Switcher Control.
+ * @constructor
+ * @extends {ol.control.Control}
+ * @param {Object} opt_options Control options, extends olx.control.ControlOptions.
+ */
+ol.control.LayerSwitcher = function(opt_options) {
+
+  var options = opt_options || {};
+  var tipLabel = options.tipLabel ?
+    options.tipLabel : 'Legend';
+
+  this.mapListeners = [];
+
+  this.hiddenClassName = 'ol-unselectable ol-control layer-switcher';
+  if (ol.control.LayerSwitcher.isTouchDevice_()) {
+    this.hiddenClassName += ' touch';
+  }
+  this.shownClassName = this.hiddenClassName + ' shown';
+
+  var element = document.createElement('div');
+  element.className = this.hiddenClassName;
+
+  var button = document.createElement('button');
+  button.setAttribute('title', tipLabel);
+  element.appendChild(button);
+
+  this.panel = document.createElement('div');
+  this.panel.className = 'panel';
+  element.appendChild(this.panel);
+  ol.control.LayerSwitcher.enableTouchScroll_(this.panel);
+
+  var this_ = this;
+
+  button.onmouseover = function(e) {
+    this_.showPanel();
+  };
+
+  button.onclick = function(e) {
+    e = e || window.event;
+    this_.showPanel();
+    e.preventDefault();
+  };
+
+  this_.panel.onmouseout = function(e) {
+    e = e || window.event;
+    if (!this_.panel.contains(e.toElement || e.relatedTarget)) {
+      this_.hidePanel();
+    }
+  };
+  ol.control.Control.call(this, {
+    element: element,
+    target: options.target
+  });
+
+};
+
+ol.inherits(ol.control.LayerSwitcher, ol.control.Control);
+
+/**
+ * @private
+ * @desc Apply workaround to enable scrolling of overflowing content within an
+ */
+ol.control.LayerSwitcher.enableTouchScroll_ = function(elm) {
+  if(ol.control.LayerSwitcher.isTouchDevice_()){
+    var scrollStartPos = 0;
+    elm.addEventListener("touchstart", function(event) {
+      scrollStartPos = this.scrollTop + event.touches[0].pageY;
+    }, false);
+    elm.addEventListener("touchmove", function(event) {
+      this.scrollTop = scrollStartPos - event.touches[0].pageY;
+    }, false);
+  }
+};
+
+/**
+ * @private
+ * @desc Determine if the current browser supports touch events. Adapted from
+ */
+ol.control.LayerSwitcher.isTouchDevice_ = function() {
+  try {
+    document.createEvent("TouchEvent");
+    return true;
+  } catch(e) {
+    return false;
   }
 };

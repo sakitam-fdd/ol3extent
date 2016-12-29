@@ -10,48 +10,59 @@
 <body>
 <div id="map"></div>
 <script type="text/javascript">
-  ol.proj.setProj4(proj4);
-  proj4.defs("EPSG:4490", "+proj=longlat +ellps=GRS80 +no_defs");
-  var projection = ol.proj.get("EPSG:3857");
-  var _projection = ol.proj.get("EPSG:3857");
-  projection.setExtent([-180, -90, 180, 90]);
-  var size = ol.extent.getWidth(projection.getExtent()) / 256;
-  var resolutions = [];
-  for(var i=0; i<19; i++){
-    resolutions[i] = Math.pow(2, 18-i);
-//    resolutions[i] = size/Math.pow(2, i);
+  let arr = [1,2,3,4]
+  let newArr = arr.filter((element, index, array) => {
+    console.log(element);
+    console.log(array);
+  })
+  function a () {
+    console.log(arr)
   }
-  var tileGrid  = new ol.tilegrid.TileGrid({
-//    origin:[43.88955327932,12.590178885765],
-    origin:[0,0],
-    resolutions: resolutions
-  });
-  var urlTemplate = 'http://online3.map.bdimg.com/onlinelabel/?qt=tile&x={x}&y={y}&z={z}&styles=pl&udt=20151021&scaler=1&p=1';
-  var tileArcGISXYZ = new ol.source.XYZ({
-    wrapX: false,
-    tileGrid: tileGrid,
-    projection: projection,
-    tileUrlFunction: function (tileCoord) {
-      var url = urlTemplate.replace('{z}', (tileCoord[0]).toString())
-        .replace('{x}', tileCoord[1].toString())
-        .replace('{y}', (tileCoord[2] - 1).toString());
-      return url;
-    }
-  });
-  var baidu_layer = new ol.layer.Tile({
-    projection: projection,
-    source: tileArcGISXYZ
-  });
-
-  var map = new ol.Map({
-    target: 'map',
-    layers: [baidu_layer],
-    view: new ol.View({
-      projection: projection,
-      center: ol.proj.transform([12959773,4853101], _projection,projection),
-      zoom: 12
-    })
-  });
+  a()
 </script>
+<!--<script type="text/javascript">-->
+  <!--ol.proj.setProj4(proj4);-->
+  <!--proj4.defs("EPSG:4490", "+proj=longlat +ellps=GRS80 +no_defs");-->
+  <!--var projection = ol.proj.get("EPSG:3857");-->
+  <!--var _projection = ol.proj.get("EPSG:3857");-->
+  <!--projection.setExtent([-180, -90, 180, 90]);-->
+  <!--var size = ol.extent.getWidth(projection.getExtent()) / 256;-->
+  <!--var resolutions = [];-->
+  <!--for(var i=0; i<19; i++){-->
+    <!--resolutions[i] = Math.pow(2, 18-i);-->
+<!--//    resolutions[i] = size/Math.pow(2, i);-->
+  <!--}-->
+  <!--var tileGrid  = new ol.tilegrid.TileGrid({-->
+<!--//    origin:[43.88955327932,12.590178885765],-->
+    <!--origin:[0,0],-->
+    <!--resolutions: resolutions-->
+  <!--});-->
+  <!--var urlTemplate = 'http://online3.map.bdimg.com/onlinelabel/?qt=tile&x={x}&y={y}&z={z}&styles=pl&udt=20151021&scaler=1&p=1';-->
+  <!--var tileArcGISXYZ = new ol.source.XYZ({-->
+    <!--wrapX: false,-->
+    <!--tileGrid: tileGrid,-->
+    <!--projection: projection,-->
+    <!--tileUrlFunction: function (tileCoord) {-->
+      <!--var url = urlTemplate.replace('{z}', (tileCoord[0]).toString())-->
+        <!--.replace('{x}', tileCoord[1].toString())-->
+        <!--.replace('{y}', (tileCoord[2] - 1).toString());-->
+      <!--return url;-->
+    <!--}-->
+  <!--});-->
+  <!--var baidu_layer = new ol.layer.Tile({-->
+    <!--projection: projection,-->
+    <!--source: tileArcGISXYZ-->
+  <!--});-->
+
+  <!--var map = new ol.Map({-->
+    <!--target: 'map',-->
+    <!--layers: [baidu_layer],-->
+    <!--view: new ol.View({-->
+      <!--projection: projection,-->
+      <!--center: ol.proj.transform([12959773,4853101], _projection,projection),-->
+      <!--zoom: 12-->
+    <!--})-->
+  <!--});-->
+<!--</script>-->
 </body>
 </html>

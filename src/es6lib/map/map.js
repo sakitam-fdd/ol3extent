@@ -2,25 +2,42 @@ class HDMap {
 
   constructor () {
     this.mapTools = {
-      addPoint: false,ljQuery: false,
+      addPoint: false, ljQuery: false,
+      iQuery: false, drawPlot: false,
       toolsType: {
-        addPoint: "addPoint",
-        ljQuery: "ljQuery"
+        addPoint: 'addPoint',
+        ljQuery: 'ljQuery',
+        iQuery: 'iQuery',
+        drawPlot: 'drawPlot'
       }
     };
     this.addPointHandlerClick = null;
+    this.plotDraw = null;//标绘工具
+    this.plotEdit = null;
+    this._lastDrawInteractionGeometry = null;
+    this.wgs84Sphere = new ol.Sphere(6378137);
+    window.ObservableObj = new ol.Object();
+
+    this.currentMapLines = [];
+    this.currentMapPoints = [];
+
+    this.lineLayers = [];
+    this.pointLayers = [];
+    this.polygonLayers = [];
+
+    this.circleSerachFeat = null;
   }
 
   /**
    * 获取地图参数
    * @param mapDiv
-   * @param url
+   * @param params
    */
-  getMapParams (mapDiv, url) {
+  getMapParams (mapDiv, params) {
     let that = this;
     let promise = new Promise(function (resolve, reject) {
       $.ajax({
-        url: url + '?f=pjson',
+        url: params['layerUrl'] + '?f=pjson',
         type: 'GET',
         dataType: 'jsonp',
         jsonp: 'callback',
@@ -32,7 +49,10 @@ class HDMap {
               origin: [data.tileInfo.origin.x, data.tileInfo.origin.y],
               tileSize: data.tileInfo.cols,
               lods: data.tileInfo.lods,
-              tileUrl: url
+              tileUrl: params['layerUrl'],
+              center: params['center'],
+              zoom: params['zoom'],
+              config: params['config']
             };
             that.initMap(mapDiv, res);
             resolve(res);
@@ -120,22 +140,23 @@ class HDMap {
     let baseLayer = new ol.layer.Tile({
       isBaseLayer: true,
       isCurrentBaseLayer: true,
-      layerName: config.mapConfig.baseLayers[0].layerName,
+      layerName: options.layerName,
       source: tileArcGISXYZ
     });
     this.map = new ol.Map({
       target: mapDiv,
+      loadTilesWhileAnimating: true,
       interactions: ol.interaction.defaults({
         doubleClickZoom: true,
         keyboard: false
-      }).extend([]),
+      }).extend([new app.Drag()]),
       controls: [new ol.control.ScaleLine({
         target: 'hdscalebar'
       })],
       layers: [baseLayer],
       view: new ol.View({
-        center: ol.proj.fromLonLat(config.mapConfig.center, that.projection),
-        zoom: config.mapConfig.zoom,
+        center: ol.proj.fromLonLat(options.center, that.projection),
+        zoom: options.zoom,
         projection: that.projection,
         extent: that.fullExtent,
         maxResolution: that._resolutions[0],
@@ -153,10 +174,21 @@ class HDMap {
     this.map.on("click", event => {
       if (this.mapTools.iQuery) {
         if (this.queryparams != null && this.queryparams.drawend != null) {
-          this.queryparams.drawend(evt);
+          this.queryparams.drawend(event);
           this.mapTools.iQuery = false;
         }
         return;
+      } else if (this.plotDraw && !this.plotDraw.isDrawing()) {
+        let feature = this.map.forEachFeatureAtPixel(event.pixel, feature => {
+          return feature;
+        });
+        if (feature && feature.getGeometry().isPlot) {
+          this.plotEdit.activate(feature);  // 开始编辑
+          window.ObservableObj.set('plotFeature', feature);
+          window.ObservableObj.dispatchEvent('choosePlot');
+        } else {
+          this.plotEdit.deactivate(); // 结束编辑
+        }
       }
     }, this);
   }
@@ -239,7 +271,7 @@ class HDMap {
     this.deactiveAll();
     if (this.mapTools.hasOwnProperty(toolType)) {
       this.mapTools[toolType] = true;
-      switch (toolType){
+      switch (toolType) {
         case this.mapTools.toolsType.addPoint: //添加点
           this.addPointHandlerClick = this.map.once("singleclick", event => {
             this.addPoint({
@@ -258,7 +290,43 @@ class HDMap {
             }
           });
           break;
+        case this.mapTools.toolsType.drawPlot: //plot
+          if (!this.plotEdit) {
+            this.plotDraw = new P.PlotDraw(this.map);
+            this.plotEdit = new P.PlotEdit(this.map);
+            this.plotDraw.on(P.Event.PlotDrawEvent.DRAW_END, event => {
+              let feature = event.feature;
+              this.setLastDrawInteractionGeometry(feature.getGeometry().clone());
+              this.plotEdit.activate(feature);
+              this.getTempVectorLayer(params['layerName'], {create: true}).getSource().addFeature(feature);
+              window.ObservableObj.set("PlotFeature", feature);
+              window.ObservableObj.dispatchEvent("PlotFeatureEvt");
+            }, false, this);
+          }
+          this.plotEdit.deactivate();
+          this.plotDraw.activate(eval(params.plotType), params);
+          break;
       }
+    }
+  }
+
+  /**
+   * 获取最后绘制空间信息
+   * @returns {ol.geom.Geometry|*|null}
+   */
+  getLastDrawInteractionGeometry () {
+    return this._lastDrawInteractionGeometry;
+  };
+
+  /**
+   * 设置最后绘制空间信息
+   * @param geometry
+   */
+  setLastDrawInteractionGeometry (geometry) {
+    if (geometry instanceof ol.geom.Geometry) {
+      this._lastDrawInteractionGeometry = geometry;
+    } else {
+      console.error(geometry, "不是几何对象");
     }
   }
 
@@ -325,11 +393,12 @@ class HDMap {
 
     iconFeature.setStyle(iconStyle);
 
-    if (params.layerName) {
+    if (params['layerName']) {
       let layer = this.getTempVectorLayer(params.layerName, {
         create: true
       });
       layer.getSource().addFeature(iconFeature);
+      this.pointLayers.push(params.layerName)
     } else {
       this.tempVectorLayer.getSource().addFeature(iconFeature);
     }
@@ -342,8 +411,357 @@ class HDMap {
       ol.Observable.unByKey(this.addPointHandlerClick);//移除对key的监听
     }
     this.deactiveAll(); //取消激活所有工具
-    // this.OrderLayerZindex();
+    this.OrderLayerZindex();
     return iconFeature;
+  }
+
+  /**
+   * 添加线要素
+   * @param feature
+   * @param params
+   * @returns {*}
+   */
+  addPolyline (feature, params) {
+
+    let features = [];
+    if (feature instanceof Array) {
+      features = feature;
+    } else {
+      features.push(feature);
+    }
+
+    let style = null, selectStyle = null, lineStyle = null, lineSelectStyle = null;
+    if (params['style']) {
+      style = params['style'];
+    } else {
+      style = {width: 4, color: '#0000EE'};
+    }
+    if (params['selectStyle']) {
+      selectStyle = params['selectStyle'];
+    } else {
+      selectStyle = {width: 6, color: '#FF0000'}
+    }
+    lineStyle = new ol.style.Style({
+      stroke: new ol.style.Stroke(style)
+    });
+    lineSelectStyle = new ol.style.Style({
+      stroke: new ol.style.Stroke(selectStyle)
+    });
+
+
+    var linefeature;
+    for (let i = 0; i < features.length; i++) {
+      let _feat = features[i];
+      if (_feat.geometry.hasOwnProperty('paths')) {
+        let feat = {
+          'type': 'Feature',
+          'geometry': {
+            'type': 'MultiLineString',
+            'coordinates': _feat.geometry.paths
+          }
+        };
+        this.currentMapLines = this.currentMapLines.concat(_feat.geometry.paths);
+        linefeature = (new ol.format.GeoJSON()).readFeature(feat);
+      } else {
+        linefeature = new ol.Feature({
+          geometry: new ol.format.WKT().readGeometry(_feat.geometry)
+        });
+        let extent = linefeature.getGeometry().getExtent();
+        this.currentMapLines.push([[extent[0], extent[1]], [extent[2], extent[3]]]);
+        this.zoomToExtent(extent, false);
+      }
+
+      if (params['showStyle']) {
+        linefeature.set('normalStyle', lineStyle);
+        linefeature.set('selectStyle', lineSelectStyle);
+      }
+
+      if (!_feat['attributes']) {
+        _feat['attributes'] = {};
+        _feat.attributes['layerName'] = params['layerName'];
+      }
+
+      if (_feat.attributes['ID'] || _feat.attributes['id']) {
+        linefeature.setId(_feat.attributes['ID'] || _feat.attributes['id']);
+        linefeature.set('layerName', params['layerName']);
+        linefeature.setProperties(_feat.attributes);
+      }
+
+      if (lineStyle != null) {
+        linefeature.setStyle(lineStyle);//设置线段样式
+      }
+      if (params['layerName']) {
+        let layer = this.getTempVectorLayer(params.layerName, {
+          create: true
+        });
+        layer.getSource().addFeature(linefeature);
+        this.lineLayers.push(params.layerName);
+      } else {
+        this.tempVectorLayer.getSource().addFeature(linefeature);
+      }
+      this.OrderLayerZindex();
+      return linefeature;
+    }
+
+  };
+
+  /**
+   * 添加多条线要素
+   * @param features
+   * @param params
+   */
+  addPolylines (features, params) {
+    if (params['isclear']) {
+      this.clearGraphics();
+    }
+    if (features != null && features.length > 0) {
+      features.forEach(feat => {
+        this.addPolyline(feat, params);
+      });
+      let extent = new ol.geom.MultiLineString(this.currentMapLines, null).getExtent();
+      extent = this.adjustExtent(extent);
+      this.zoomToExtent(extent, false);
+    }
+  };
+
+  /**
+   * 创建查询circle
+   * @param layerName
+   * @param obj
+   * @param radius
+   * @returns {null|*}
+   */
+  createSreachCircle (layerName, obj, radius) {
+    if (!radius) {
+      radius = 5000;
+    }
+    let style = new ol.style.Style({
+      fill: new ol.style.Fill({
+        color: 'rgba(65,105,225, 0.5)'
+      })
+    });
+    let config = {
+      radius: radius,
+      maxRadius: 500000,
+      map: this.map,
+      layerName: layerName,
+      style: style
+    };
+    if (config.radius > config.maxRadius) {
+      config.radius = config.maxRadius
+    }
+    obj = $.extend(config, obj);
+    if (!this.circleSerachFea) {
+      this.circleSerachFeat = P.Plot.Circle.createCircleByCenterRadius(obj);
+      let extent = this.circleSerachFeat.feature.getGeometry().getExtent();
+      this.zoomToExtent(extent);
+    } else {
+      this.circleSerachFeat.setCenter(obj.center);
+      this.circleSerachFeat.setRadius(obj.radius);
+    }
+    let circle = new ol.geom.Circle({
+      center: this.circleSerachFeat.getCircle().getCenter(),
+      radius: this.circleSerachFeat.getCircle().getRadius()
+    });
+    this.setLastDrawInteractionGeometry(circle);
+    return this.circleSerachFeat;
+  }
+
+  /**
+   * 调整当前要素范围
+   * @param extent
+   * @returns {*}
+   */
+  adjustExtent (extent) {
+    let width = ol.extent.getWidth(extent);
+    let height = ol.extent.getHeight(extent);
+    let adjust = 0.2;
+    if (width < 0.05) {
+      let bleft = ol.extent.getBottomLeft(extent);//获取xmin,ymin
+      let tright = ol.extent.getTopRight(extent);//获取xmax,ymax
+      let xmin = bleft[0] - adjust;
+      let ymin = bleft[1] - adjust;
+      let xmax = tright[0] + adjust;
+      let ymax = tright[1] + adjust;
+      extent = ol.extent.buffer(extent, adjust);
+    }
+    return extent;
+  }
+
+  /**
+   * 缩放到当前范围
+   * @param extent
+   * @param isanimation
+   * @param duration
+   */
+  zoomToExtent (extent, isanimation, duration) {
+    let view = this.map.getView();
+    let size = this.map.getSize();
+    /**
+     *  @type {ol.Coordinate} center The center of the view.
+     */
+    let center = ol.extent.getCenter(extent);
+    if (!isanimation) {
+      view.fit(extent, size, {
+        padding: [350, 200, 200, 350]
+      });
+      view.setCenter(center);
+    } else {
+      if (!duration) {
+        duration = 100;
+        let pan = ol.animation.pan({
+          duration: duration,
+          source: /** @type {ol.Coordinate} */ (view.getCenter())
+        });
+        let bounce = ol.animation.bounce({
+          duration: duration,
+          resolution: view.getResolution()
+        });
+        this.map.beforeRender(pan, bounce);
+        view.setCenter(center);
+        view.fit(extent, size, {
+          padding: [200, 350, 200, 350]
+        });
+      }
+    }
+  };
+
+  /**
+   * 根据当前线要素缩放
+   * @param feature
+   */
+  zoomByLineFeature (feature) {
+    let linefeature = null;
+    if (feature.geometry.hasOwnProperty('paths')) {
+      let feat = {
+        'type': 'Feature',
+        'geometry': {
+          'type': 'LineString',
+          'coordinates': feature.geometry.paths[0]
+        }
+      };
+      linefeature = (new ol.format.GeoJSON()).readFeature(feat);
+    } else {
+      linefeature = new ol.Feature({
+        geometry: new ol.format.WKT().readGeometry(feature.geometry)
+      });
+    }
+    if (linefeature != null) {
+      let extent = linefeature.getGeometry().getExtent();
+      this.zoomToExtent(extent, false);
+    }
+  };
+
+  /**
+   * 调整图层
+   * @constructor
+   */
+  OrderLayerZindex () {
+    if (this.map) {
+      let layerindex = 5;
+      let layers = this.map.getLayers();
+      //调整面图层
+      layers.forEach(layer => {
+        let layerNameTemp = layer.get("layerName");
+        if (this.polygonLayers.indexOf(layerNameTemp) >= 0) {
+          layer.setZIndex(layerindex++);
+        }
+      }, this);
+      //调整线图层
+      layers.forEach(layer => {
+        let layerNameTemp = layer.get("layerName");
+        if (this.lineLayers.indexOf(layerNameTemp) >= 0) {
+          layer.setZIndex(layerindex++);
+        }
+      }, this);
+      //调整点图层
+      layers.forEach(layer => {
+        let layerNameTemp = layer.get("layerName");
+        if (this.pointLayers.indexOf(layerNameTemp) >= 0) {
+          layer.setZIndex(layerindex++);
+        }
+      }, this);
+    }
+  };
+
+  /**
+   * 清除地图上所有东西
+   */
+  clearGraphics () {
+    this.removeDrawInteraion();
+    this.deactiveAll();
+    this.map.getOverlays().clear();
+    this._lastDrawInteractionGeometry = null;
+    this.clearTempLayers();
+    this.removeAllTileLayer();
+  }
+
+  /**
+   * 清除所有临时图层
+   */
+  clearTempLayers () {
+    if (this.map) {
+      let layers = this.map.getLayers();
+      if (layers) {
+        layers.forEach(layer => {
+          if (layer instanceof ol.layer.Vector) {
+            if (layer.getSource() && layer.getSource().clear) {
+              layer.getSource().clear();
+            }
+          }
+        }, this);
+      }
+    }
+  }
+
+  /**
+   * 移除所有的专题图层
+   */
+  removeAllTileLayer () {
+    if (this.map) {
+      let layers = this.map.getLayers();
+      layers.forEach(layer => {
+        if (layer.get('title') && layer.get('isImageType')) {
+          this.map.removeLayer(layer);
+        }
+      }, this);
+    }
+  }
+
+  /**
+   * 通过layerName移除要素
+   * @param layerName
+   */
+  removeFeatureByLayerName (layerName) {
+    if (this.map) {
+      let layers = this.map.getLayers();
+      layers.forEach(layer => {
+        if (layer instanceof ol.layer.Vector) {
+          if (layer.get('layerName') === layerName && layer.getSource() && layer.getSource().clear) {
+            layer.getSource().clear();
+          }
+        }
+      })
+    }
+  }
+
+  /**
+   * 通过layerNames移除要素
+   * @param layerNames
+   */
+  removeFeatureByLayerNames (layerNames) {
+    if (layerNames && layerNames instanceof Array){
+      let layers = this.map.getLayers();
+      layers.forEach(layer => {
+        if (layer instanceof ol.layer.Vector) {
+          if (layerNames.indexOf(layer.get('layerName')) >= 0){
+            if (layer.getSource() && layer.getSource().clear) {
+              layer.getSource().clear();
+            }
+          }
+        }
+      })
+    }
   }
 
   /**
@@ -356,7 +774,7 @@ class HDMap {
     if (feature instanceof ol.Feature) {
       let source = null;
       let layers = this.map.getLayers();
-      layers.forEach( layer => {
+      layers.forEach(layer => {
         let source = layer.getSource();
         if (source.getFeatures) {
           let features = source.getFeatures();
