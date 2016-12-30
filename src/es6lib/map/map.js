@@ -412,7 +412,239 @@ class HDMap {
     }
     this.deactiveAll(); //取消激活所有工具
     this.OrderLayerZindex();
+    this.MovePointToView(geometry.getCoordinates());
     return iconFeature;
+  }
+
+  /**
+   * 按类型添加点
+   * @param array
+   * @param drawType
+   * @param params
+   * @returns {*}
+   */
+  addTypePoints (array, drawType, params) {
+    if (!params) params = {};
+    if (params['isClear']) {
+      this.clearGraphics();
+    }
+    if (!array || array.length == 0) {
+      return false
+    }
+
+    let multiPoint = new ol.geom.MultiPoint([]);
+    let addedPoints = [];
+    for (let i = 0; i < array.length; i++) {
+      let attr = array[i], geometry = null, imgSrcHover, imgSrc;
+
+      if (!attr) {
+        continue;
+      }
+      if (!attr.geometry) {
+        continue;
+      }
+      if (attr instanceof ol.geom.Geometry) {
+        geometry = attr;
+      } else if ($.isArray(attr.geometry)) {
+        geometry = new ol.geom.Point(attr.geometry);
+      } else {
+        geometry = new ol.format.WKT().readGeometry(attr.geometry);
+      }
+
+      let feature = new ol.Feature({
+        geometry: geometry
+      });
+      multiPoint.appendPoint(geometry);
+
+      //设置标识参数
+      if (params) {
+        feature.set("params", params);
+        if (params['layerName']) {
+          feature.set("layerName", params.layerName);
+        }
+      }
+      if (!attr['attributes']) {
+        attr['attributes'] = {};
+      }
+      if (attr.attributes['ID'] || attr.attributes['id']) {
+        feature.setId(attr.attributes['ID'] ? attr.attributes['ID'] : attr.attributes['id']);
+        feature.setProperties(attr.attributes);
+      } else {
+        console.info("传入的数据缺少id");
+        continue;
+      }
+      //样式
+      if (attr.attributes['imgSrc']) {
+        imgSrc = attr.attributes.imgSrc;
+        if (attr.attributes['imgSrcHover']) {
+          imgSrcHover = attr.attributes["imgSrcHover"];
+        } else {
+          imgSrcHover = attr.attributes.imgSrc;
+        }
+      } else if (params['featureType']) {
+        imgSrc = config.markConfig.getMarkConfigByType(params['featureType']).imgURL;
+        imgSrcHover = config.markConfig.getMarkConfigByType(params['featureType']).imgURL;
+      } else {
+        imgSrc = config.markConfig.getDefaultMrakConfig().imgURL;
+        imgSrcHover = config.markConfig.getDefaultMrakConfig().imgURL;
+      }
+      let selectStyle, normalStyle;
+      if (params['orderBy']) {
+        selectStyle = new ol.style.Style({
+          image: new ol.style.Icon({//标绘点的样式
+            anchor: [0.5, 0.5],
+            anchorXUnits: 'fraction',
+            anchorYUnits: 'fraction',
+            src: imgSrc
+          }),
+          text: new ol.style.Text({
+            text: i + 1 + "",
+            offsetX: 0.5,
+            offsetY: -18,
+            fill: new ol.style.Fill({
+              color: "#fff"
+            })
+          })
+        });
+        normalStyle = new ol.style.Style({
+          image: new ol.style.Icon({//标绘点选中的样式
+            anchor: [0.5, 0.5],
+            anchorXUnits: 'fraction',
+            anchorYUnits: 'fraction',
+            src: imgSrcHover
+          }),
+          text: new ol.style.Text({
+            text: i + 1 + "",
+            offsetX: 0.5,
+            offsetY: -18,
+            fill: new ol.style.Fill({
+              color: "#fff"
+            })
+          })
+        });
+      } else {
+        selectStyle = new ol.style.Style({
+          image: new ol.style.Icon({//标绘点的样式
+            anchor: [0.5, 0.5],
+            anchorXUnits: 'fraction',
+            anchorYUnits: 'fraction',
+            src: imgSrcHover
+          })
+        });
+        normalStyle = new ol.style.Style({
+          image: new ol.style.Icon({//标绘点选中的样式
+            anchor: [0.5, 0.5],
+            anchorXUnits: 'fraction',
+            anchorYUnits: 'fraction',
+            src: imgSrc
+          })
+        });
+      }
+      //是否存储样式
+      if (params['showStyle']) {
+        feature.set('normalStyle', normalStyle);
+        feature.set('selectStyle', selectStyle);
+      }
+      if (normalStyle != null) {
+        feature.setStyle(normalStyle);//设置样式
+      }
+      if (drawType && drawType == "overlay") {
+        this.addTypeOverlay(feature, attr['attributes'], params, i);
+      } else {
+        if (params['layerName']) {
+          let layer = this.getTempVectorLayer(params.layerName, {
+            create: true
+          });
+          layer.getSource().addFeature(feature);
+          this.pointLayers.push(params.layerName);
+        } else {
+          this.tempVectorLayer.getSource().addFeature(feature);
+        }
+      }
+    }
+    if (!params['disZoomToExtent']) {
+      this._getExtent(multiPoint);
+    }
+    return addedPoints;
+  }
+
+  /**
+   * 字体图标标绘
+   * @param feature
+   * @param attributes
+   * @param params
+   * @param i
+   */
+  addTypeOverlay (feature, attributes, params, i) {
+    try {
+      let marker = document.createElement('div');
+      marker.className = 'overlay-point iconfont';
+      let color = '#EB4F38', fontSize = '31px', id = null, icon = null, coordinate = [], span = null, m = 0;
+      if (attributes['icon']) {
+        icon = attributes['icon'];
+      } else if (params['icon']) {
+        icon = params['icon'];
+      }
+      if (icon) {
+        if (icon['className']) {
+          $(marker).addClass(icon.className);
+        }
+        if (icon['color']) {
+          color = icon.color;
+        }
+        if (icon['fontSize']) {
+          fontSize = icon.fontSize;
+        }
+      }
+      if (params['orderBy']) {
+        m = i + 1;
+        span = document.createElement('span');
+      } else if (params["orderByNum"] && attributes['number']) {
+        m = attributes.number + 1;
+        span = document.createElement('span');
+      }
+      if (!!span) {
+        span.innerHTML = m;
+        marker.appendChild(span);
+      }
+      marker.style.color = color;
+      marker.style.fontSize = fontSize;
+      marker.onmousedown = function (ev) {
+        if (ev.button == 2) {//鼠标右键
+          window.ObservableObj.set("rightMenuFeature", feature);
+          window.ObservableObj.dispatchEvent("rightMenuEvt");
+        } else if (ev.button == 0) {//鼠标左键
+          window.ObservableObj.set("overlay", feature);
+          window.ObservableObj.dispatchEvent("overlayEvt");
+        }
+      };
+      if (feature) {
+        id = feature.getId();
+        let overlaytemp = this.map.getOverlayById(id);
+        if (!overlaytemp) {
+          coordinate = feature.getGeometry().getCoordinates();
+          let iconOverlay = new ol.Overlay({
+            element: marker,
+            positioning: 'center-center',
+            id: id,
+            offset: [0, -10],
+            stopEvent: true
+          });
+          iconOverlay.set('feature', feature);
+          iconOverlay.setPosition(coordinate);
+          //设置标识参数
+          if (params) {
+            iconOverlay.set("params", params);
+            if (params['layerName']) {
+              iconOverlay.set("layerName", params.layerName);
+            }
+          }
+          this.map.addOverlay(iconOverlay);
+        }
+      }
+    } catch (e) {
+
+    }
   }
 
   /**
@@ -589,6 +821,30 @@ class HDMap {
   }
 
   /**
+   * 获取当前范围
+   * @param multiPoint
+   * @returns {Array}
+   * @private
+   */
+  _getExtent (multiPoint) {
+    let extent = [];
+    if (multiPoint.getPoints().length > 0) {
+      extent = multiPoint.getExtent();
+      let bExtent = true;
+      for (let m = 0; m < 4; m++) {
+        if (extent[m] == Infinity || extent[m] == NaN) {
+          bExtent = false;
+          break;
+        }
+      }
+      if (bExtent) {
+        this.zoomToExtent(extent, true);
+      }
+    }
+    return extent;
+  };
+
+  /**
    * 缩放到当前范围
    * @param extent
    * @param isanimation
@@ -685,6 +941,34 @@ class HDMap {
   };
 
   /**
+   * 设置当前overLay不可见
+   * @param id
+   */
+  setOverLayOpacityById (id) {
+    if (this.map && !!id) {
+      let overLay = this.map.getOverlayById(id);
+      if (overLay && overLay instanceof ol.Overlay){
+        let opacity = (overLay.getElement().style.opacity === '0') ? 1 : 0;
+        overLay.getElement().style.opacity = opacity;
+      }
+    }
+  }
+
+  /**
+   * 标记当前overlay
+   * @param id
+   * @param layerName
+   */
+  makeOverLayById (id, layerName) {
+    if (this.map && !!id) {
+      let overLay = this.map.getOverlayById(id);
+      if (overLay && overLay instanceof ol.Overlay){
+        overLay.set('layerName', layerName)
+      }
+    }
+  }
+
+  /**
    * 清除地图上所有东西
    */
   clearGraphics () {
@@ -750,11 +1034,11 @@ class HDMap {
    * @param layerNames
    */
   removeFeatureByLayerNames (layerNames) {
-    if (layerNames && layerNames instanceof Array){
+    if (layerNames && layerNames instanceof Array) {
       let layers = this.map.getLayers();
       layers.forEach(layer => {
         if (layer instanceof ol.layer.Vector) {
-          if (layerNames.indexOf(layer.get('layerName')) >= 0){
+          if (layerNames.indexOf(layer.get('layerName')) >= 0) {
             if (layer.getSource() && layer.getSource().clear) {
               layer.getSource().clear();
             }
@@ -807,6 +1091,23 @@ class HDMap {
       }
     } else {
       console.info("传入的不是要素");
+    }
+  }
+
+  /**
+   * 通过layerName移除overLay
+   * @param layerName
+   */
+  removeOverlayByLayerName (layerName) {
+    if (this.map) {
+      let overlays = this.map.getOverlays().getArray();
+      let len = overlays.length;
+      for (let i = 0; i < len; i++) {
+        if (overlays[i] && overlays[i].get('layerName') === layerName) {
+          this.map.removeOverlay(overlays[len - 1]);
+          i--;
+        }
+      }
     }
   }
 }
