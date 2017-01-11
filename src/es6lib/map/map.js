@@ -483,7 +483,10 @@ class HDMap {
         }
       } else if (params['featureType']) {
         imgSrc = config.markConfig.getMarkConfigByType(params['featureType']).imgURL;
-        imgSrcHover = config.markConfig.getMarkConfigByType(params['featureType']).imgURL;
+        imgSrcHover = config.markConfig.getMarkConfigByType(params['featureType']).hover;
+        if (!imgSrcHover) {
+          imgSrcHover = imgSrc;
+        }
       } else {
         imgSrc = config.markConfig.getDefaultMrakConfig().imgURL;
         imgSrcHover = config.markConfig.getDefaultMrakConfig().imgURL;
@@ -609,6 +612,8 @@ class HDMap {
       }
       marker.style.color = color;
       marker.style.fontSize = fontSize;
+      marker.selectColor = "#1b9de8";
+      marker.normalColor = color;
       marker.onmousedown = function (ev) {
         if (ev.button == 2) {//鼠标右键
           window.ObservableObj.set("rightMenuFeature", feature);
@@ -800,6 +805,34 @@ class HDMap {
   }
 
   /**
+   * 通过id高亮overlay
+   * @param id
+   * @returns {ol.Overlay}
+   */
+  highlightedOverlayById (id) {
+    if (this.map && !!id && id !== '') {
+      let overlay = this.map.getOverlayById(id);
+      overlay.getElement().style.color = overlay.getElement().selectColor;
+      $(overlay.getElement()).addClass('marker-raise');
+      return overlay;
+    }
+  }
+
+  /**
+   * 通过id取消高亮
+   * @param id
+   * @returns {ol.Overlay}
+   */
+  unHighlightedOverlayById (id) {
+    if (this.map && !!id && id !== '') {
+      let overlay = this.map.getOverlayById(id);
+      overlay.getElement().style.color = overlay.getElement().normalColor;
+      $(overlay.getElement()).removeClass('marker-raise');
+      return overlay;
+    }
+  }
+
+  /**
    * 调整当前要素范围
    * @param extent
    * @returns {*}
@@ -941,13 +974,31 @@ class HDMap {
   };
 
   /**
+   * 获取当前地图的范围
+   * @returns {ol.Extent}
+   */
+  getMapCurrentExtent () {
+    return this.map.getView().calculateExtent(this.map.getSize());
+  };
+
+  /**
+   * 判断点是否在视图内，如果不在地图将自动平移
+   */
+  MovePointToView (coord) {
+    let extent = this.getMapCurrentExtent();
+    if (!(ol.extent.containsXY(extent, coord[0], coord[1]))) {
+      this.map.getView().setCenter([coord[0], coord[1]]);
+    }
+  };
+
+  /**
    * 设置当前overLay不可见
    * @param id
    */
   setOverLayOpacityById (id) {
     if (this.map && !!id) {
       let overLay = this.map.getOverlayById(id);
-      if (overLay && overLay instanceof ol.Overlay){
+      if (overLay && overLay instanceof ol.Overlay) {
         let opacity = (overLay.getElement().style.opacity === '0') ? 1 : 0;
         overLay.getElement().style.opacity = opacity;
       }
@@ -962,7 +1013,7 @@ class HDMap {
   makeOverLayById (id, layerName) {
     if (this.map && !!id) {
       let overLay = this.map.getOverlayById(id);
-      if (overLay && overLay instanceof ol.Overlay){
+      if (overLay && overLay instanceof ol.Overlay) {
         overLay.set('layerName', layerName)
       }
     }
@@ -1104,7 +1155,7 @@ class HDMap {
       let len = overlays.length;
       for (let i = 0; i < len; i++) {
         if (overlays[i] && overlays[i].get('layerName') === layerName) {
-          this.map.removeOverlay(overlays[len - 1]);
+          this.map.removeOverlay(overlays[i]);
           i--;
         }
       }

@@ -670,6 +670,8 @@ var HDMap = function () {
         }
         marker.style.color = color;
         marker.style.fontSize = fontSize;
+        marker.selectColor = "#1b9de8";
+        marker.normalColor = color;
         marker.onmousedown = function (ev) {
           if (ev.button == 2) {
             //鼠标右键
@@ -873,6 +875,40 @@ var HDMap = function () {
     }
 
     /**
+     * 通过id高亮overlay
+     * @param id
+     * @returns {ol.Overlay}
+     */
+
+  }, {
+    key: 'highlightedOverlayById',
+    value: function highlightedOverlayById(id) {
+      if (this.map && !!id && id !== '') {
+        var overlay = this.map.getOverlayById(id);
+        overlay.getElement().style.color = overlay.getElement().selectColor;
+        $(overlay.getElement()).addClass('marker-raise');
+        return overlay;
+      }
+    }
+
+    /**
+     * 通过id取消高亮
+     * @param id
+     * @returns {ol.Overlay}
+     */
+
+  }, {
+    key: 'unHighlightedOverlayById',
+    value: function unHighlightedOverlayById(id) {
+      if (this.map && !!id && id !== '') {
+        var overlay = this.map.getOverlayById(id);
+        overlay.getElement().style.color = overlay.getElement().normalColor;
+        $(overlay.getElement()).removeClass('marker-raise');
+        return overlay;
+      }
+    }
+
+    /**
      * 调整当前要素范围
      * @param extent
      * @returns {*}
@@ -1029,6 +1065,30 @@ var HDMap = function () {
             }
           }, _this4);
         })();
+      }
+    }
+  }, {
+    key: 'getMapCurrentExtent',
+
+
+    /**
+     * 获取当前地图的范围
+     * @returns {ol.Extent}
+     */
+    value: function getMapCurrentExtent() {
+      return this.map.getView().calculateExtent(this.map.getSize());
+    }
+  }, {
+    key: 'MovePointToView',
+
+
+    /**
+     * 判断点是否在视图内，如果不在地图将自动平移
+     */
+    value: function MovePointToView(coord) {
+      var extent = this.getMapCurrentExtent();
+      if (!ol.extent.containsXY(extent, coord[0], coord[1])) {
+        this.map.getView().setCenter([coord[0], coord[1]]);
       }
     }
   }, {
@@ -1228,7 +1288,7 @@ var HDMap = function () {
         var len = overlays.length;
         for (var i = 0; i < len; i++) {
           if (overlays[i] && overlays[i].get('layerName') === layerName) {
-            this.map.removeOverlay(overlays[len - 1]);
+            this.map.removeOverlay(overlays[i]);
             i--;
           }
         }

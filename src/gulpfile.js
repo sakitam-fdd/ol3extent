@@ -17,7 +17,7 @@ var $ = require('gulp-load-plugins')();
 var src = {
   scss: './lib/**/*.scss',            //scss目录
   css: './build/css/',                //css目录
-  compressCss: './build/css/*.css',   //连接后的css
+  compressCss: './build/css/**/*.css',   //连接后的css
   minCss: './build/dist/css/',        //压缩后的css
   script: './lib/**/*.js',             //js源目录
   build: './build/',    //连接后的js
@@ -34,10 +34,10 @@ gulp.task('sass', function () {
 //合并压缩css
 gulp.task('minifyCss', ['sass'], function () {
   return gulp.src(src.compressCss)		    //监听对象文件
-    .pipe(concat('main.all.css'))			//指定合并后的文件名
+    .pipe(concat('ol3extent.all.css'))			//指定合并后的文件名
     .pipe(gulp.dest(src.minCss))		//指定合并后生成文件的输出目录
     .pipe(minifyCss())					//执行压缩
-    .pipe(rename('main.min.css'))		//压缩后的文件名
+    .pipe(rename('ol3extent.min.css'))		//压缩后的文件名
     .pipe(gulp.dest(src.minCss));		//压缩后生成文件的输出目录
 });
 

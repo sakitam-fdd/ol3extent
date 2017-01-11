@@ -33,6 +33,8 @@ ol.Overlay.Popup = function (opt_options) {
   }
   if (this.options.id) {
     this.container.id = this.options.id;
+  } else {
+    this.container.id = "overlay" + Math.floor(Math.random() * 1000)+ Math.floor(Math.random() * 1000);
   }
   if (this.options.title) {
     var p = document.createElement('p');
@@ -58,15 +60,15 @@ ol.Overlay.Popup = function (opt_options) {
   this.center.appendChild(this.content);
   this.container.appendChild(this.center);
 
-
   this.bottom = document.createElement("div");
   this.bottom.className = "ol-popup-bottom";
   this.bottomDiv = document.createElement("div");
-  this.bottomDiv.className = "ol-popup-bottom-fouce";
+  if(this.options.isShowPic){
+    this.bottomDiv.className = "ol-popup-bottom-fouce";
+  }
 
   this.bottom.appendChild(this.bottomDiv);
   this.container.appendChild(this.bottom);
-
   if (this.options.showMarkFea) {
     var that = this;
     this.bottomMarkFea = new ol.Feature({
@@ -100,31 +102,25 @@ ol.Overlay.Popup = function (opt_options) {
 
   if (this.options.maxHeight) {
     this.container.style.maxHeight = this.options.maxHeight;
-    //goog.style.setStyle(this.container, "max-height", this.options.maxHeight);
   }
 
 
   if (this.options.titleWith) {
     if (this.title) {
       this.title.style.width = this.options.titleWith;
-      //goog.style.setStyle(this.title, "width", this.options.titleWith);
     }
   }
   if (this.options.titlebackgroundColor) {
     if (this.title) {
       this.title.style.backgroundColor = this.options.titlebackgroundColor;
-      //goog.style.setStyle(this.title, "background-color", this.options.titlebackgroundColor);
     }
   }
   if (this.options.width) {
     this.container.style.width = this.options.width;
-    //goog.style.setStyle(this.container, "width", this.options.width);
   }
   if (this.options.height) {
     this.container.style.height = this.options.height;
     this.container.style.bottomDiv = this.options.height;
-    // goog.style.setStyle(this.container, "height", this.options.height);
-    // goog.style.setStyle(this.bottomDiv, "top", this.options.height);
   }
 
 
@@ -206,11 +202,10 @@ ol.Overlay.Popup.prototype.showMin = function () {
   this.container.style.display = 'none';
   if (this.options.showMarkFea || this.options.showMark) {
     if (!this.smallOverLay) {
-      var labelId = Math.floor(Math.random() * 1000);
       var domTemp = "<span class='BMap_Marker' unselectable='on' style='position: absolute; padding: 0; margin: 0; border: 0; width: 0; height: 0; z-index: 1000;'>" +
         "<div style='position: absolute; margin: 0; padding: 0; width: 10px; height: 22px;'>" +
         "</div>" +
-        "<label id=" + labelId + " class=' BMapLabel'  unselectable='on' title='我的标记' style='position: absolute; cursor: pointer; border: 1px solid rgb(128, 128, 128); padding: 1px 2px; white-space: nowrap; font-style: normal; font-variant: normal; font-weight: normal; font-stretch: normal; font-size: 12px; line-height: normal; font-family: arial, simsun; z-index: 80; color: rgb(51, 51, 51); -webkit-user-select: none; max-width: 106px;overflow:hidden;left: 10px; top: -35px; background-color: rgb(255, 255, 255);'>我的标记</label>" +
+        "<label id=" + this.options.id + " class=' BMapLabel confirmOverlay'  unselectable='on' title='我的标记' style='position: absolute; cursor: pointer; border: 1px solid rgb(128, 128, 128); padding: 1px 2px; white-space: nowrap; font-style: normal; font-variant: normal; font-weight: normal; font-stretch: normal; font-size: 12px; line-height: normal; font-family: arial, simsun; z-index: 80; color: rgb(51, 51, 51); -webkit-user-select: none; max-width: 106px;overflow:hidden;left: 10px; top: -35px; background-color: rgb(255, 255, 255);'>我的标记</label>" +
         "</span>";
 
       var dom = document.createElement("div");
@@ -230,14 +225,16 @@ ol.Overlay.Popup.prototype.showMin = function () {
       this.smallOverLay.getElement().style.display = "block";
       this.smallOverLay.setPosition(this.options.position);
     }
+    var that = this;
     if (this.myversion == 0) {
-      var that = this;
-      this.smallOverLay.getElement().getElementsByTagName("label")[0].addEventListener("click", function (event) {
-        that.container.style.display = 'block';
-        that.smallOverLay.getElement().style.display = "none";
-      });
-      this.myversion = this.myversion + 1;
+      this.container.style.display = 'block';
+      this.smallOverLay.getElement().style.display = "none";
     }
+    this.smallOverLay.getElement().getElementsByTagName("label")[0].addEventListener("click", function (event) {
+      that.container.style.display = 'block';
+      that.smallOverLay.getElement().style.display = "none";
+    });
+    this.myversion = this.myversion + 1;
   }
 };
 
