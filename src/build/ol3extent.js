@@ -1422,7 +1422,7 @@ ol.Overlay.Popup = function (opt_options) {
   this.container.appendChild(this.center);
 
   this.bottom = document.createElement("div");
-  this.bottom.className = "ol-popup-bottom";
+  this.bottom.className = this.options.bottomClass ? this.options.bottomClass : 'ol-popup-bottom';
   this.bottomDiv = document.createElement("div");
   if(this.options.isShowPic){
     this.bottomDiv.className = "ol-popup-bottom-fouce";
