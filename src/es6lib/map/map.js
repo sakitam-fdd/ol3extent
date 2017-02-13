@@ -1,4 +1,4 @@
-class HDMap {
+export default class HDMap {
 
   constructor () {
     this.mapTools = {

@@ -1,0 +1,72 @@
+<html>
+<head>
+  <title>天地图WMTS</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="public/ol.css">
+  <script type="text/javascript" src="public/ol.js"></script>
+  <script src="public/jquery.js"></script>
+  <script src="../lib/customCircle/customCircle.js"></script>
+</head>
+
+<body>
+<div id="map" style="width:100%;"></div>
+<script>
+  var projection = ol.proj.get('EPSG:4326');
+  var size = ol.extent.getWidth(projection.getExtent()) / 256;
+  var projectionExtent = projection.getExtent();
+  var resolutions = new Array(19);
+  var matrixIds = new Array(19);
+  for (var z = 0; z < 19; ++z) {
+    // generate resolutions and matrixIds arrays for this WMTS
+    resolutions[z] = size / Math.pow(2, z);
+    matrixIds[z] = z;
+  }
+  var tian_di_tu_road_layer = new ol.layer.Tile({
+    opacity: 0.7,
+    source: new ol.source.WMTS({
+      url: 'http://t{0-6}.tianditu.com/vec_c/wmts',
+//      url: 'http://t{0-6}.tianditu.com/ter_c/wmts',
+      layer: 'vec',
+      matrixSet: 'c',
+      format: 'tiles',
+      projection: projection,
+      tileGrid: new ol.tilegrid.WMTS({
+        origin: ol.extent.getTopLeft(projectionExtent),
+        resolutions: resolutions,
+        matrixIds: matrixIds
+      }),
+      style: 'default',
+      wrapX: false
+    })
+  });
+
+  // 创建地图
+  var map = new ol.Map({
+    layers: [tian_di_tu_road_layer],
+    view: new ol.View({
+      projection: projection,
+//      center: [12594302.448537555, 13862647.674364097],
+      center: [109.15169990462329, 31.74108365827285],
+      zoom: 6
+    }),
+    target: "map"
+  });
+  var style = new ol.style.Style({
+    fill: new ol.style.Fill({
+      color: 'rgba(65,105,225, 0)'
+    })
+  });
+  map.on('click', function (event) {
+    console.log(event.coordinate)
+  })
+  var wgs84Sphere = new ol.Sphere(6378137);
+  var sourceProj = map.getView().getProjection();
+  var center = [109.15169990462329, 31.74108365827285];
+  var c1 = ol.proj.transform(center, sourceProj, 'EPSG:4326');
+  var c2 = ol.proj.transform(center, sourceProj, 'EPSG:4326');
+  var length = wgs84Sphere.haversineDistance(c1, c2);
+  console.log(length)
+</script>
+</body>
+
+</html>

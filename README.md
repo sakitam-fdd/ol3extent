@@ -1,4 +1,4 @@
-# [恒达时讯WebGIS 开发平台](smileFDD@gmail.com)
+# [ol3扩展](smileFDD@gmail.com)
 
 基于开源地图openlayer3
 
@@ -14,13 +14,3 @@
 * Internet Explorer 8+
 * Opera *(latest 2)*
 * Safari *(latest 2)*
-
-## License
-
-The code is available under the [MIT license](LICENSE.txt).
-
-## [目录结构]()
-
-### [地图示例]()
-1.地图展示
-  功能描述：
