@@ -1162,3 +1162,5 @@ class HDMap {
     }
   }
 }
+
+export default HDMap
