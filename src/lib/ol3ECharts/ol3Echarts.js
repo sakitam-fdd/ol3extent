@@ -3,7 +3,6 @@
  * @author FDD<https://github.com/smileFDD>
  * @date 2017/2/13
  * @version V1.0.0
- * @alias author Neil (杨骥, 511415343@qq.com)
  */
 
 ol.Observable.ol3Echarts = function (params) {
