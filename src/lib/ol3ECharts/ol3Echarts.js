@@ -120,7 +120,6 @@ ol.Observable.ol3Echarts.prototype.setOption = function (option, notMerge) {
       }
     }
   }
-  debugger
   // this.echartsVM.setOption(option, notMerge);
 };
 /**

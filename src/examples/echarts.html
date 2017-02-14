@@ -17,7 +17,9 @@
 <script type="text/javascript" src="public/ol.js"></script>
 <script src="public/jquery.js"></script>
 <script src="public/echarts/echarts.js"></script>
-<script src="../lib/ol3ECharts/ol3Echarts.js"></script>
+<!--<script src="../lib/ol3ECharts/ol3Echarts.js"></script>-->
+<script src="ol3Echarts.js"></script>
+<!--<script src="../lib/ol3ECharts/EchartsLayer.js"></script>-->
 <!--<script src="public/echarts/china.js"></script>-->
 <script>
   $(document).ready(function () {
@@ -837,22 +839,12 @@
           color: '#fff'
         }
       },
-      geo: {
-        map: '',
-        label: {
-          emphasis: {
-            show: false
-          }
-        },
-        roam: true,
-        itemStyle: {
-        }
-      },
+      olMap: {},
       series: [
         {
         name: 'pm2.5',
         type: 'scatter',
-        coordinateSystem: 'geo',
+        coordinateSystem: 'olMap',
         data: convertData(data),
         symbolSize: function (val) {
           return val[2] / 10;
@@ -876,7 +868,7 @@
         {
           name: 'Top 5',
           type: 'effectScatter',
-          coordinateSystem: 'geo',
+          coordinateSystem: 'olMap',
           data: convertData(data.sort(function (a, b) {
             return b.value - a.value;
           }).slice(0, 6)),
@@ -907,16 +899,18 @@
     };
     map.once('postrender', function (e) {
       console.log('aa');
-      if (ol3EchartsVm !== undefined)
+      if (echartslayer !== undefined)
         return;
-      ol3EchartsVm = new ol.Observable.ol3Echarts({
-        map: map,
-        echartsOp: echarts
-      });
-      var container = ol3EchartsVm.getEchartsContainer();
-      var myChart = ol3EchartsVm.initECharts(container);
-      window.onresize = myChart.resize;
-      ol3EchartsVm.setOption(option, true);
+//      ol3EchartsVm = new ol.Observable.ol3Echarts({
+//        map: map,
+//        echartsOp: echarts
+//      });
+//      var container = ol3EchartsVm.getEchartsContainer();
+//      var myChart = ol3EchartsVm.initECharts(container);
+//      window.onresize = myChart.resize;
+//      ol3EchartsVm.setOption(option, true);
+      var echartslayer = new ol3Echarts(map);
+      echartslayer.chart.setOption(option);
     });
 
   });
