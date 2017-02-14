@@ -47,9 +47,9 @@ ol.Observable.ol3Echarts.prototype._bindEvent = function () {
   this._map.getView().on('change:center', this._moveHandler('moving'));
   this._map.on('moveend', this._moveHandler('moveend'));
   /*(this.echartsVM.getZr || this.echartsVM.getZrender)*/
-  this.echartsVM.getZrender().on('dragstart', this._dragZrenderHandler(true));
+  this.echartsVM.getZr().on('dragstart', this._dragZrenderHandler(true));
   /*(this.echartsVM.getZr || this.echartsVM.getZrender)*/
-  this.echartsVM.getZrender().on('dragend', this._dragZrenderHandler(false));
+  this.echartsVM.getZr().on('dragend', this._dragZrenderHandler(false));
 };
 /**
  * 添加标注
@@ -88,6 +88,7 @@ ol.Observable.ol3Echarts.prototype._addMarkWrap = function () {
  * @param notMerge
  */
 ol.Observable.ol3Echarts.prototype.setOption = function (option, notMerge) {
+  this.echartsVM.setOption(option, notMerge);
   var series = option.series || {};
   // 记录所有的geoCoord
   for (var i = 0, item; item = series[i++];) {
@@ -119,7 +120,8 @@ ol.Observable.ol3Echarts.prototype.setOption = function (option, notMerge) {
       }
     }
   }
-  this.echartsVM.setOption(option, notMerge);
+  debugger
+  // this.echartsVM.setOption(option, notMerge);
 };
 /**
  * 添加坐标处理
@@ -182,18 +184,17 @@ ol.Observable.ol3Echarts.prototype._fireEvent = function (type) {
  */
 ol.Observable.ol3Echarts.prototype.refresh = function () {
   if (this.echartsVM) {
-    var option = this.echartsVM.getOption();
-    var component = this.echartsVM.component || {};
-    var legend = component.legend;
-    var dataRange = component.dataRange;
-    if (legend) {
-      option.legend.selected = legend.getSelectedMap();
-    }
-    if (dataRange) {
-      option.dataRange.range = dataRange._range;
-    }
+    var option = this.echartsVM.getOption() || {};
+    var legend = option.legend;
+    var dataRange = option.dataRange;
+    // if (legend) {
+    //   option.legend.selected = legend.getSelectedMap();
+    // }
+    // if (dataRange) {
+    //   option.dataRange.range = dataRange._range;
+    // }
     this.echartsVM.clear();
-    this.setOption(option);
+    this.echartsVM.setOption(option);
   }
 };
 /**
