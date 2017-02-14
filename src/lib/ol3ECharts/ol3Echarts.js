@@ -33,7 +33,7 @@ ol.Observable.ol3Echarts.prototype._init = function () {
  * @param echartsVM
  * @returns {*}
  */
-ol.Observable.ol3Echarts.prototype.initECharts = function (echartsVM) {
+ol.Observable.ol3Echarts.prototype.initECharts = function () {
   this.echartsVM = this.echartsOp.init.apply(this, arguments);
   this._bindEvent();
   this._addMarkWrap();
@@ -45,20 +45,25 @@ ol.Observable.ol3Echarts.prototype.initECharts = function (echartsVM) {
  */
 ol.Observable.ol3Echarts.prototype._bindEvent = function () {
   //self._map.getView().on('change:resolution', _zoomChangeHandler('zoom'));
-  this._map.getView().on('change:center', _moveHandler('moving'));
-  this._map.on('moveend', _moveHandler('moveend'));
-  this.echartsVM.getZrender().on('dragstart', _dragZrenderHandler(true));
-  this.echartsVM.getZrender().on('dragend', _dragZrenderHandler(false));
+  this._map.getView().on('change:center', this._moveHandler('moving'));
+  this._map.on('moveend', this._moveHandler('moveend'));
+  /*(this.echartsVM.getZr || this.echartsVM.getZrender)*/
+  this.echartsVM.getZrender().on('dragstart', this._dragZrenderHandler(true));
+  /*(this.echartsVM.getZr || this.echartsVM.getZrender)*/
+  this.echartsVM.getZrender().on('dragend', this._dragZrenderHandler(false));
 };
-
+/**
+ * 添加标注
+ * @private
+ */
 ol.Observable.ol3Echarts.prototype._addMarkWrap = function () {
-  function _addMark(seriesIdx, markData, markType) {
+  function _addMark (seriesIdx, markData, markType) {
     var data;
     if (markType == 'markPoint') {
       var data = markData.data;
       if (data && data.length) {
         for (var k = 0, len = data.length; k < len; k++) {
-          self._AddPos(data[k]);
+          this._addPos(data[k]);
         }
       }
     }
@@ -66,13 +71,14 @@ ol.Observable.ol3Echarts.prototype._addMarkWrap = function () {
       data = markData.data;
       if (data && data.length) {
         for (var k = 0, len = data.length; k < len; k++) {
-          self._AddPos(data[k][0]);
-          self._AddPos(data[k][1]);
+          this._addPos(data[k][0]);
+          this._addPos(data[k][1]);
         }
       }
     }
-    self._ec._addMarkOri(seriesIdx, markData, markType);
+    this.echartsVM._addMarkOri(seriesIdx, markData, markType);
   }
+
   this.echartsVM._addMarkOri = this.echartsVM._addMark;
   this.echartsVM._addMark = _addMark;
 };
@@ -84,7 +90,6 @@ ol.Observable.ol3Echarts.prototype._addMarkWrap = function () {
  */
 ol.Observable.ol3Echarts.prototype.setOption = function (option, notMerge) {
   var series = option.series || {};
-
   // 记录所有的geoCoord
   for (var i = 0, item; item = series[i++];) {
     var geoCoord = item.geoCoord;
@@ -117,12 +122,16 @@ ol.Observable.ol3Echarts.prototype.setOption = function (option, notMerge) {
   }
   this.echartsVM.setOption(option, notMerge);
 };
-
+/**
+ * 添加坐标处理
+ * @param obj
+ * @private
+ */
 ol.Observable.ol3Echarts.prototype._addPos = function (obj) {
   var coord = this._geoCoord[obj.name]
   var pos = this.coordToPixel(coord);
-  obj.x = pos[0] ;//- self._mapOffset[0];
-  obj.y = pos[1] ;//- self._mapOffset[1];
+  obj.x = pos[0];//- self._mapOffset[0];
+  obj.y = pos[1];//- self._mapOffset[1];
 };
 /**
  * Zrender拖拽触发事件
@@ -131,22 +140,28 @@ ol.Observable.ol3Echarts.prototype._addPos = function (obj) {
  * @private
  */
 ol.Observable.ol3Echarts.prototype._dragZrenderHandler = function (isStart) {
+  var that = this;
   return function () {
-    this._map.dragging = isStart;
+    that._map.dragging = isStart;
   }
 };
-ol.Observable.ol3Echarts.prototype._moveHandler = function () {
+/**
+ * 移动事件处理
+ * @returns {Function}
+ * @private
+ */
+ol.Observable.ol3Echarts.prototype._moveHandler = function (type) {
+  var that = this;
   return function (e) {
     // 记录偏移量
-    var offsetEle =
-      self._echartsContainer.parentNode.parentNode.parentNode;
-    self._mapOffset = [
+    var offsetEle = that._echartsContainer.parentNode.parentNode.parentNode;
+    that._mapOffset = [
       -parseInt(offsetEle.style.left) || 0,
       -parseInt(offsetEle.style.top) || 0
     ];
-    self._echartsContainer.style.left = self._mapOffset[0] + 'px';
-    self._echartsContainer.style.top = self._mapOffset[1] + 'px';
-    _fireEvent(type);
+    that._echartsContainer.style.left = that._mapOffset[0] + 'px';
+    that._echartsContainer.style.top = that._mapOffset[1] + 'px';
+    that._fireEvent(type);
   }
 };
 /**

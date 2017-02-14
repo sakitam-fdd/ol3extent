@@ -1,6 +1,6 @@
-export default class HDMap {
-
+class HDMap extends HMap {
   constructor () {
+    super()
     this.mapTools = {
       addPoint: false, ljQuery: false,
       iQuery: false, drawPlot: false,

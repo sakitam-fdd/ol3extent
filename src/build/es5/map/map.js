@@ -1,18 +1,22 @@
 'use strict';
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var HDMap = function () {
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var HDMap = function (_HMap) {
+  _inherits(HDMap, _HMap);
+
   function HDMap() {
     _classCallCheck(this, HDMap);
 
-    this.mapTools = {
+    var _this = _possibleConstructorReturn(this, (HDMap.__proto__ || Object.getPrototypeOf(HDMap)).call(this));
+
+    _this.mapTools = {
       addPoint: false, ljQuery: false,
       iQuery: false, drawPlot: false,
       toolsType: {
@@ -22,21 +26,22 @@ var HDMap = function () {
         drawPlot: 'drawPlot'
       }
     };
-    this.addPointHandlerClick = null;
-    this.plotDraw = null; //标绘工具
-    this.plotEdit = null;
-    this._lastDrawInteractionGeometry = null;
-    this.wgs84Sphere = new ol.Sphere(6378137);
+    _this.addPointHandlerClick = null;
+    _this.plotDraw = null; //标绘工具
+    _this.plotEdit = null;
+    _this._lastDrawInteractionGeometry = null;
+    _this.wgs84Sphere = new ol.Sphere(6378137);
     window.ObservableObj = new ol.Object();
 
-    this.currentMapLines = [];
-    this.currentMapPoints = [];
+    _this.currentMapLines = [];
+    _this.currentMapPoints = [];
 
-    this.lineLayers = [];
-    this.pointLayers = [];
-    this.polygonLayers = [];
+    _this.lineLayers = [];
+    _this.pointLayers = [];
+    _this.polygonLayers = [];
 
-    this.circleSerachFeat = null;
+    _this.circleSerachFeat = null;
+    return _this;
   }
 
   /**
@@ -190,25 +195,25 @@ var HDMap = function () {
   }, {
     key: 'addEvent',
     value: function addEvent() {
-      var _this = this;
+      var _this2 = this;
 
       this.map.on("click", function (event) {
-        if (_this.mapTools.iQuery) {
-          if (_this.queryparams != null && _this.queryparams.drawend != null) {
-            _this.queryparams.drawend(event);
-            _this.mapTools.iQuery = false;
+        if (_this2.mapTools.iQuery) {
+          if (_this2.queryparams != null && _this2.queryparams.drawend != null) {
+            _this2.queryparams.drawend(event);
+            _this2.mapTools.iQuery = false;
           }
           return;
-        } else if (_this.plotDraw && !_this.plotDraw.isDrawing()) {
-          var feature = _this.map.forEachFeatureAtPixel(event.pixel, function (feature) {
+        } else if (_this2.plotDraw && !_this2.plotDraw.isDrawing()) {
+          var feature = _this2.map.forEachFeatureAtPixel(event.pixel, function (feature) {
             return feature;
           });
           if (feature && feature.getGeometry().isPlot) {
-            _this.plotEdit.activate(feature); // 开始编辑
+            _this2.plotEdit.activate(feature); // 开始编辑
             window.ObservableObj.set('plotFeature', feature);
             window.ObservableObj.dispatchEvent('choosePlot');
           } else {
-            _this.plotEdit.deactivate(); // 结束编辑
+            _this2.plotEdit.deactivate(); // 结束编辑
           }
         }
       }, this);
@@ -298,7 +303,7 @@ var HDMap = function () {
   }, {
     key: 'activeTool',
     value: function activeTool(toolType, params) {
-      var _this2 = this;
+      var _this3 = this;
 
       this.deactiveAll();
       if (this.mapTools.hasOwnProperty(toolType)) {
@@ -307,7 +312,7 @@ var HDMap = function () {
           case this.mapTools.toolsType.addPoint:
             //添加点
             this.addPointHandlerClick = this.map.once("singleclick", function (event) {
-              _this2.addPoint({
+              _this3.addPoint({
                 geometry: event.coordinate
               }, params);
             });
@@ -317,8 +322,8 @@ var HDMap = function () {
             this.queryparams = params;
             ol.Observable.unByKey(this.addPointHandlerClick); //移除对key的监听
             this.addPointHandlerClick = this.map.on("singleclick", function (event) {
-              if (_this2.mapTools.ljQuery) {
-                _this2.addPoint({
+              if (_this3.mapTools.ljQuery) {
+                _this3.addPoint({
                   geometry: event.coordinate
                 }, params);
               }
@@ -331,9 +336,9 @@ var HDMap = function () {
               this.plotEdit = new P.PlotEdit(this.map);
               this.plotDraw.on(P.Event.PlotDrawEvent.DRAW_END, function (event) {
                 var feature = event.feature;
-                _this2.setLastDrawInteractionGeometry(feature.getGeometry().clone());
-                _this2.plotEdit.activate(feature);
-                _this2.getTempVectorLayer(params['layerName'], { create: true }).getSource().addFeature(feature);
+                _this3.setLastDrawInteractionGeometry(feature.getGeometry().clone());
+                _this3.plotEdit.activate(feature);
+                _this3.getTempVectorLayer(params['layerName'], { create: true }).getSource().addFeature(feature);
                 window.ObservableObj.set("PlotFeature", feature);
                 window.ObservableObj.dispatchEvent("PlotFeatureEvt");
               }, false, this);
@@ -820,14 +825,14 @@ var HDMap = function () {
      * @param params
      */
     value: function addPolylines(features, params) {
-      var _this3 = this;
+      var _this4 = this;
 
       if (params['isclear']) {
         this.clearGraphics();
       }
       if (features != null && features.length > 0) {
         features.forEach(function (feat) {
-          _this3.addPolyline(feat, params);
+          _this4.addPolyline(feat, params);
         });
         var extent = new ol.geom.MultiLineString(this.currentMapLines, null).getExtent();
         extent = this.adjustExtent(extent);
@@ -1044,33 +1049,33 @@ var HDMap = function () {
      * @constructor
      */
     value: function OrderLayerZindex() {
-      var _this4 = this;
+      var _this5 = this;
 
       if (this.map) {
         (function () {
           var layerindex = 5;
-          var layers = _this4.map.getLayers();
+          var layers = _this5.map.getLayers();
           //调整面图层
           layers.forEach(function (layer) {
             var layerNameTemp = layer.get("layerName");
-            if (_this4.polygonLayers.indexOf(layerNameTemp) >= 0) {
+            if (_this5.polygonLayers.indexOf(layerNameTemp) >= 0) {
               layer.setZIndex(layerindex++);
             }
-          }, _this4);
+          }, _this5);
           //调整线图层
           layers.forEach(function (layer) {
             var layerNameTemp = layer.get("layerName");
-            if (_this4.lineLayers.indexOf(layerNameTemp) >= 0) {
+            if (_this5.lineLayers.indexOf(layerNameTemp) >= 0) {
               layer.setZIndex(layerindex++);
             }
-          }, _this4);
+          }, _this5);
           //调整点图层
           layers.forEach(function (layer) {
             var layerNameTemp = layer.get("layerName");
-            if (_this4.pointLayers.indexOf(layerNameTemp) >= 0) {
+            if (_this5.pointLayers.indexOf(layerNameTemp) >= 0) {
               layer.setZIndex(layerindex++);
             }
-          }, _this4);
+          }, _this5);
         })();
       }
     }
@@ -1176,13 +1181,13 @@ var HDMap = function () {
   }, {
     key: 'removeAllTileLayer',
     value: function removeAllTileLayer() {
-      var _this5 = this;
+      var _this6 = this;
 
       if (this.map) {
         var layers = this.map.getLayers();
         layers.forEach(function (layer) {
           if (layer.get('title') && layer.get('isImageType')) {
-            _this5.map.removeLayer(layer);
+            _this6.map.removeLayer(layer);
           }
         }, this);
       }
@@ -1304,6 +1309,4 @@ var HDMap = function () {
   }]);
 
   return HDMap;
-}();
-
-exports.default = HDMap;
+}(HMap);
