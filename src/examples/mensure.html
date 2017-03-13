@@ -3,12 +3,22 @@
   <title>天地图WMTS</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="public/ol.css">
+  <link rel="stylesheet" href="../build/css/measure/measureTool.css">
   <script type="text/javascript" src="public/ol.js"></script>
   <script src="public/jquery.js"></script>
-  <script src="../lib/customCircle/customCircle.js"></script>
+  <script src="../lib/measure/measure.js"></script>
+  <style type="text/css">
+    .measure-tool {
+      position: absolute;
+      top: 0;
+    }
+    .measure-tool div{
+      cursor: pointer;
+    }
+  </style>
 </head>
-
 <body>
+<div></div>
 <div id="map" style="width:100%;"></div>
 <script>
   var projection = ol.proj.get('EPSG:4326');
@@ -49,7 +59,8 @@
       center: [109.15169990462329, 31.74108365827285],
       zoom: 6
     }),
-    target: "map"
+    target: "map",
+    controls: [new ol.control.Measure()],
   });
   var style = new ol.style.Style({
     fill: new ol.style.Fill({
@@ -66,6 +77,12 @@
   var c2 = ol.proj.transform(center, sourceProj, 'EPSG:4326');
   var length = wgs84Sphere.haversineDistance(c1, c2);
   console.log(length)
+//  setTimeout(function () {
+//    var Measure = new ol.control.Measure({
+//      map: map
+//    });
+//    Measure.setup('measureLength');
+//  }, 500)
 </script>
 </body>
 

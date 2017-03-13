@@ -10,6 +10,8 @@ ol.control.Measure = function (opt_options) {
   var options = opt_options || {};
 
   this.wgs84Sphere = new ol.Sphere(6378137);
+
+  // this.map = options.map;
   /**
    * Currently drawn feature.
    * @type {ol.Feature}
@@ -553,3 +555,7 @@ ol.control.Measure.enableTouchScroll_ = function (elm) {
     }, false);
   }
 };
+
+// ol.control.Measure.getMap = function () {
+//   return this.map;
+// }
