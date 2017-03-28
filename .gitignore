@@ -1,5 +1,4 @@
 # Created by .ignore support plugin (hsz.mobi)
-.gitignore
 .idea/inspectionProfiles/
 .idea/workspace.xml
-src/node_modules/
+node_modules/
