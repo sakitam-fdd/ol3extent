@@ -2,7 +2,7 @@
 
 基于开源地图openlayer3
 
-* Homepage: [https://github.com/smileFDD/myMapApi](https://github.com/smileFDD/myMapApi)
+* Homepage: [https://github.com/sakitam-fdd/myMapApi](https://github.com/sakitam-fdd/myMapApi)
 * Source: [https://github.com/openlayers/ol3](https://github.com/openlayers/ol3)
 * gmail: smileFDD@gamil.com
 

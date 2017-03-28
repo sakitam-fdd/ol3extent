@@ -1,6 +1,6 @@
 {
   "name": "ol3extent",
-  "author": "https://github.com/smileFDD",
+  "author": "https://github.com/sakitam-fdd",
   "version": "1.0.0",
   "scripts": {
     "build": "npm install && bower install && gulp",
