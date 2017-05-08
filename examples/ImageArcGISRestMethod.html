@@ -255,8 +255,8 @@
           url: 'http://10.254.123.75:8080/OneMapServer/rest/services/GL_NB_GS/MapServer/export',
           data: src,
           success: function (data,status) {
-            var _url = binToBase64(data)
-            console.log(_url)
+            data = JSON.parse(data)
+            var _url = data['href']
             imageTile.getImage().src = _url
           }
         })
