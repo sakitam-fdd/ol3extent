@@ -1,0 +1,274 @@
+<html>
+<head>
+  <title>天地图WMTS</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="public/ol.css">
+  <link rel="stylesheet" href="../build/css/measure/measureTool.css">
+  <script type="text/javascript" src="public/ol-debug.js"></script>
+  <script src="public/jquery.js"></script>
+  <style type="text/css">
+  </style>
+</head>
+<body>
+<div></div>
+<div id="map" style="width:100%;"></div>
+<script src="../lib/arcgis/imageArcGISRestMethod.js"></script>
+<script src="../lib/arcgis/BitToFile.js"></script>
+<script>
+  var projection = ol.proj.get('EPSG:3857');
+  var map = new ol.Map({
+    target: 'map',
+    controls: [],
+    layers: [
+      new ol.layer.Tile({
+        source: new ol.source.OSM()
+      })
+    ],
+    view: new ol.View({
+      center: [0, 0],
+      zoom: 2,
+      projection: projection
+    })
+  })
+
+  var params = {
+    dynamicLayers: JSON.stringify([
+      {
+        "id":1,
+        "source":{
+          "type":"dataLayer",
+          "dataSource":{
+            "type":"table",
+            "dataSourceName":"GL_NB_GS",
+            "workspaceId":"NBWorkspaceID"
+          }
+        },
+        "definitionExpression":"LXDM ='G1'",
+        "drawingInfo":{
+          "renderer":{
+            "type":"uniqueValue",
+            "field1":"JSDJ_KEY",
+            "defaultSymbol":{
+              "type":"esriSFS",
+              "style":"esriSLSSolid",
+              "color":[
+                255,
+                0,
+                0,
+                255
+              ],
+              "width":5,
+              "outline":{
+                "type":"esriSLS",
+                "style":"esriSLSSolid",
+                "width":5,
+                "color":[
+                  255,
+                  0,
+                  0,
+                  255
+                ]
+              }
+            },
+            "uniqueValueInfos":[]
+          }
+        }
+      }
+    ]),
+    layerDefs: "0:LXDM ='G1'",
+    layerName: "basic_lx",
+    layerUrl: "http://10.254.123.75:8080/OneMapServer/rest/services/GL_NB_GS/MapServer",
+    layers: "show:0",
+  };
+
+  var ss = [
+    {
+      "value":"10",
+      "symbol":{
+        "type":"esriSLS",
+        "style":"esriSLSSolid",
+        "width":4,
+        "color":[
+          255,
+          0,
+          0,
+          255
+        ],
+        "outline":{
+          "type":"esriSLS",
+          "style":"esriSLSSolid",
+          "width":4,
+          "color":[
+            0,
+            255,
+            0,
+            255
+          ]
+        }
+      }
+    },
+    {
+      "value":"11",
+      "symbol":{
+        "type":"esriSLS",
+        "style":"esriSLSSolid",
+        "width":4,
+        "color":[
+          0,
+          0,
+          255,
+          255
+        ],
+        "outline":{
+          "type":"esriSLS",
+          "style":"esriSLSSolid",
+          "width":4,
+          "color":[
+            0,
+            255,
+            0,
+            255
+          ]
+        }
+      }
+    },
+    {
+      "value":"12",
+      "symbol":{
+        "type":"esriSLS",
+        "style":"esriSLSSolid",
+        "width":4,
+        "color":[
+          255,
+          0,
+          255,
+          255
+        ],
+        "outline":{
+          "type":"esriSLS",
+          "style":"esriSLSSolid",
+          "width":4,
+          "color":[
+            0,
+            255,
+            0,
+            255
+          ]
+        }
+      }
+    },
+    {
+      "value":"13",
+      "symbol":{
+        "type":"esriSLS",
+        "style":"esriSLSSolid",
+        "width":4,
+        "color":[
+          0,
+          0,
+          0,
+          255
+        ],
+        "outline":{
+          "type":"esriSLS",
+          "style":"esriSLSSolid",
+          "width":4,
+          "color":[
+            0,
+            255,
+            0,
+            255
+          ]
+        }
+      }
+    },
+    {
+      "value":"14",
+      "symbol":{
+        "type":"esriSLS",
+        "style":"esriSLSSolid",
+        "width":4,
+        "color":[
+          114,
+          137,
+          68,
+          255
+        ],
+        "outline":{
+          "type":"esriSLS",
+          "style":"esriSLSSolid",
+          "width":4,
+          "color":[
+            0,
+            255,
+            0,
+            255
+          ]
+        }
+      }
+    },
+    {
+      "value":"30",
+      "symbol":{
+        "type":"esriSLS",
+        "style":"esriSLSSolid",
+        "width":4,
+        "color":[
+          137,
+          143,
+          171,
+          255
+        ],
+        "outline":{
+          "type":"esriSLS",
+          "style":"esriSLSSolid",
+          "width":4,
+          "color":[
+            0,
+            255,
+            0,
+            255
+          ]
+        }
+      }
+    }
+  ]
+
+  var layer = new ol.layer.Tile({
+    layerName: 'base',
+    isImage: true,
+    source: new ol.source.ImageArcGISRestMethod({
+      url: 'http://10.254.123.75:8080/OneMapServer/rest/services/GL_NB_GS/MapServer',
+      params: (function () {
+        var params_ = JSON.parse(JSON.stringify(params))
+        if (params_ && params_.hasOwnProperty('layerUrl')) {
+          delete params_.layerUrl
+        }
+        if (params_ && params_.hasOwnProperty('layerName')) {
+          delete params_.layerName
+        }
+        return params_
+      })(),
+      tileLoadFunction: function (imageTile, src) {
+        $.ajax({
+          type: 'POST',
+          url: 'http://10.254.123.75:8080/OneMapServer/rest/services/GL_NB_GS/MapServer/export',
+          data: src,
+          success: function (data,status) {
+            var _url = binToBase64(data)
+            console.log(_url)
+            imageTile.getImage().src = _url
+          }
+        })
+//        imageTile.getImage().src = src;
+      },
+      method: 'POST',
+      wrapX: false
+    })
+  })
+  if (layer) {
+    map.addLayer(layer)
+  }
+</script>
+</body>
+</html>
